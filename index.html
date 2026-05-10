@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AutoLoc 🇲🇦 — Location de Voiture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#0d0e17;--sf:#12131f;--card:#181929;--card2:#1d1e30;
+  --bd:#242538;--gold:#d4af54;--gdim:#a8882e;
+  --green:#2ec87a;--red:#f05252;--blue:#4d91ff;--org:#ff8c42;
+  --tx:#eeeaf5;--sub:#9896b0;--mt:#5c5b78;--wh:#ffffff;
+}
+html,body{height:100%;background:var(--bg);font-family:'Outfit',sans-serif;color:var(--tx);}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-thumb{background:#2a2b3d;border-radius:4px;}
+input,select,button,textarea{font-family:'Outfit',sans-serif;}
+input:focus,select:focus{outline:none;border-color:var(--gold)!important;box-shadow:0 0 0 3px rgba(212,175,84,.15);}
+button{cursor:pointer;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes toastIn{from{transform:translateX(110%);opacity:0}to{transform:translateX(0);opacity:1}}
+.fu{animation:fadeUp .35s ease both;}
+.hvr{transition:transform .18s,box-shadow .18s;}
+.hvr:hover{transform:translateY(-2px);box-shadow:0 12px 36px rgba(0,0,0,.5)!important;}
+.nb:hover{background:rgba(212,175,84,.07)!important;}
+.rh:hover{background:rgba(255,255,255,.025)!important;}
+
+/* LAYOUT */
+#app{display:flex;height:100vh;overflow:hidden;}
+#sidebar{width:220px;background:var(--sf);border-left:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0;height:100vh;overflow-y:auto;}
+#main{flex:1;overflow-y:auto;padding:28px 32px;}
+#logo{padding:20px 18px 16px;border-bottom:1px solid var(--bd);}
+#logo-inner{display:flex;align-items:center;gap:9px;}
+#logo-icon{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--gold),var(--gdim));display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
+#logo-name{font-weight:800;color:var(--wh);font-size:15px;letter-spacing:-.4px;}
+#logo-sub{font-size:10px;color:var(--mt);}
+nav{padding:12px 10px;flex:1;display:flex;flex-direction:column;gap:3px;}
+.nav-label{font-size:10px;color:var(--mt);font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:0 8px;margin-bottom:6px;}
+.nav-btn{background:transparent;border:1px solid transparent;border-radius:9px;padding:9px 12px;text-align:right;color:var(--sub);font-size:13px;font-weight:400;display:flex;gap:9px;align-items:center;width:100%;transition:all .12s;}
+.nav-btn.active{background:rgba(212,175,84,.13);border-color:rgba(212,175,84,.22);color:var(--gold);font-weight:700;}
+.nav-btn-icon{font-size:15px;opacity:.45;}
+.nav-btn.active .nav-btn-icon{opacity:1;}
+.nav-dot{margin-right:auto;width:5px;height:5px;border-radius:50%;background:var(--gold);box-shadow:0 0 5px var(--gold);display:none;}
+.nav-btn.active .nav-dot{display:block;}
+.nav-btn-text{}
+.nav-btn-sub{font-size:10px;opacity:.4;font-weight:400;}
+#sidebar-footer{padding:12px 14px 16px;border-top:1px solid var(--bd);}
+#save-badge{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--green);margin-bottom:10px;}
+#save-dot{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;}
+#user-info{display:flex;gap:8px;align-items:center;}
+#user-avatar{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#2d5a8e,#1a3a5c);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0;}
+
+/* PAGES */
+.page{display:none;flex-direction:column;gap:22px;max-width:1000px;}
+.page.active{display:flex;}
+.page-header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;}
+h1.page-title{font-size:22px;font-weight:800;color:var(--wh);letter-spacing:-.4px;}
+.page-sub{color:var(--sub);font-size:13px;margin-top:3px;}
+
+/* CARDS */
+.card{background:linear-gradient(145deg,var(--card),var(--card2));border:1px solid var(--bd);border-radius:14px;padding:20px 22px;box-shadow:0 4px 20px rgba(0,0,0,.3);}
+
+/* STATS */
+.stats-grid{display:flex;gap:12px;flex-wrap:wrap;}
+.stat-card{flex:1;min-width:120px;background:linear-gradient(145deg,var(--card),var(--card2));border:1px solid var(--bd);border-radius:14px;padding:17px 18px;box-shadow:0 4px 20px rgba(0,0,0,.3);position:relative;overflow:hidden;}
+.stat-icon{font-size:21px;margin-bottom:7px;}
+.stat-label{font-size:10px;color:var(--sub);text-transform:uppercase;letter-spacing:.07em;font-weight:600;margin-bottom:4px;}
+.stat-value{font-size:23px;font-weight:800;color:var(--wh);font-family:'IBM Plex Mono',monospace;}
+.stat-sub{font-size:11px;margin-top:4px;font-weight:500;}
+
+/* BADGES */
+.badge{border-radius:20px;padding:3px 10px;font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;}
+.badge-dot{width:6px;height:6px;border-radius:50%;display:inline-block;flex-shrink:0;}
+
+/* BUTTONS */
+.btn{border:none;border-radius:9px;padding:9px 18px;font-weight:600;font-size:13px;transition:all .15s;}
+.btn-gold{background:linear-gradient(135deg,var(--gold),var(--gdim));color:#0d0e17;box-shadow:0 3px 14px rgba(212,175,84,.35);}
+.btn-green{background:linear-gradient(135deg,var(--green),#27a566);color:#fff;}
+.btn-outline{background:transparent;border:1px solid var(--bd);color:var(--sub);}
+.btn-danger{background:rgba(240,82,82,.12);border:1px solid rgba(240,82,82,.28);color:var(--red);}
+.btn-blue{background:rgba(77,145,255,.14);border:1px solid rgba(77,145,255,.3);color:var(--blue);}
+.btn-sm{padding:5px 10px;font-size:11px;border-radius:7px;}
+
+/* FORMS */
+.field{display:flex;flex-direction:column;gap:5px;}
+.field label{font-size:11px;color:var(--sub);font-weight:600;text-transform:uppercase;letter-spacing:.06em;}
+.field input,.field select{background:var(--sf);border:1px solid var(--bd);border-radius:9px;padding:10px 12px;color:var(--tx);font-size:14px;transition:border-color .2s;width:100%;}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:12px;}
+.form-box{background:linear-gradient(145deg,var(--card),var(--card2));border:1px solid rgba(212,175,84,.28);border-radius:14px;padding:22px;}
+.form-title{font-size:14px;font-weight:700;color:var(--gold);margin-bottom:16px;}
+
+/* FILTERS */
+.filter-row{display:flex;gap:7px;flex-wrap:wrap;}
+.filter-btn{background:transparent;border:1px solid var(--bd);color:var(--sub);border-radius:8px;padding:6px 13px;font-size:12px;font-weight:400;transition:all .12s;}
+.filter-btn.active{background:rgba(212,175,84,.13);border-color:rgba(212,175,84,.4);color:var(--gold);font-weight:600;}
+
+/* TABLE */
+table{width:100%;border-collapse:collapse;}
+th{text-align:right;padding:0 10px 10px;font-size:10px;color:var(--mt);font-weight:600;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--bd);}
+td{padding:11px 10px;border-bottom:1px solid rgba(36,37,56,.4);}
+
+/* CARS GRID */
+.cars-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(245px,1fr));gap:14px;}
+.car-card{background:linear-gradient(145deg,var(--card),var(--card2));border:1px solid var(--bd);border-radius:14px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.35);}
+.car-visual{height:130px;display:flex;align-items:center;justify-content:center;border-bottom:1px solid var(--bd);position:relative;padding:16px;}
+.car-info{padding:14px 17px;}
+.car-name{font-weight:800;color:var(--wh);font-size:15px;}
+.car-plate{font-size:11px;color:var(--mt);margin-top:2px;font-family:monospace;}
+.car-price{font-weight:800;color:var(--gold);font-family:'IBM Plex Mono',monospace;font-size:17px;}
+.car-tags{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
+.car-tag{background:var(--sf);border-radius:6px;padding:3px 7px;font-size:10px;color:var(--sub);border:1px solid var(--bd);}
+.car-actions{margin-top:12px;padding-top:12px;border-top:1px solid var(--bd);display:flex;gap:6px;align-items:center;}
+
+/* BOOKING CARDS */
+.booking-list{display:flex;flex-direction:column;gap:9px;}
+.booking-card{background:linear-gradient(145deg,var(--card),var(--card2));border:1px solid var(--bd);border-radius:13px;padding:15px 19px;box-shadow:0 4px 18px rgba(0,0,0,.3);}
+.booking-main{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;}
+.booking-ref{background:rgba(212,175,84,.15);border:1px solid rgba(212,175,84,.28);border-radius:8px;padding:5px 10px;font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:11px;color:var(--gold);white-space:nowrap;}
+.booking-client{font-weight:700;color:var(--wh);font-size:15px;}
+.booking-meta{font-size:11px;color:var(--mt);margin-top:2px;display:flex;gap:10px;flex-wrap:wrap;}
+.booking-dates{font-size:11px;color:var(--sub);margin-top:3px;font-family:monospace;}
+.pay-bar-wrap{display:flex;gap:7px;align-items:center;margin-top:6px;}
+.pay-bar-bg{height:4px;width:80px;background:var(--sf);border-radius:2px;overflow:hidden;}
+.pay-bar-fill{height:100%;border-radius:2px;transition:width .3s;}
+.booking-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.82);backdrop-filter:blur(7px);display:flex;align-items:center;justify-content:center;z-index:300;padding:16px;}
+.modal-box{background:linear-gradient(145deg,var(--card),var(--card2));border:1px solid var(--bd);border-radius:18px;padding:30px;max-width:450px;width:100%;box-shadow:0 24px 72px rgba(0,0,0,.8);max-height:90vh;overflow-y:auto;}
+.modal-title{font-weight:800;color:var(--wh);font-size:17px;text-align:center;}
+.modal-sub{color:var(--sub);font-size:12px;text-align:center;margin-top:3px;}
+.modal-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(36,37,56,.4);}
+.modal-key{color:var(--mt);font-size:12px;}
+.modal-val{color:var(--wh);font-weight:600;font-size:12px;}
+.modal-clause{background:var(--sf);border-radius:9px;padding:10px 14px;font-size:11px;color:var(--mt);line-height:1.7;margin:14px 0;}
+.sig-row{display:flex;justify-content:space-between;padding:12px 0;border-top:1px dashed var(--bd);margin-bottom:14px;}
+.sig-item{text-align:center;}
+.sig-label{font-size:10px;color:var(--mt);margin-bottom:24px;}
+.sig-line{border-bottom:1px solid rgba(152,150,176,.35);width:110px;}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:24px;border-radius:12px;padding:12px 17px;font-weight:600;font-size:13px;animation:toastIn .3s ease both;box-shadow:0 8px 28px rgba(0,0,0,.55);display:flex;align-items:center;gap:8px;color:#fff;z-index:9999;max-width:280px;}
+
+/* CHART */
+.bar-chart{display:flex;align-items:flex-end;gap:8px;height:110px;padding:0 4px;}
+.bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;height:100%;justify-content:flex-end;}
+.bar-val{font-size:10px;color:var(--gold);font-weight:600;}
+.bar-body{width:100%;border-radius:4px 4px 0 0;border-bottom:none;transition:height .4s ease;min-height:0;}
+.bar-label{font-size:10px;color:var(--mt);white-space:nowrap;}
+
+/* PROGRESS BAR */
+.prog-bar-bg{height:5px;background:var(--sf);border-radius:3px;overflow:hidden;}
+.prog-bar-fill{height:100%;border-radius:3px;transition:width .5s;}
+
+/* SEARCH */
+.search-wrap{position:relative;flex:1;min-width:180px;}
+.search-icon{position:absolute;right:11px;top:50%;transform:translateY(-50%);color:var(--mt);font-size:13px;}
+.search-input{width:100%;background:var(--card);border:1px solid var(--bd);border-radius:9px;padding:10px 32px 10px 12px;color:var(--tx);font-size:13px;}
+.search-input:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(212,175,84,.12);}
+
+/* EMPTY STATE */
+.empty{text-align:center;padding:48px 0;color:var(--mt);}
+.empty-icon{font-size:32px;margin-bottom:10px;}
+
+/* SUMMARY BOX */
+.summary-box{background:rgba(212,175,84,.1);border:1px solid rgba(212,175,84,.28);border-radius:10px;padding:12px 17px;display:flex;gap:22px;flex-wrap:wrap;margin-top:14px;}
+.summary-item{}
+.summary-key{font-size:10px;color:var(--mt);font-weight:600;text-transform:uppercase;}
+.summary-val{font-size:15px;font-weight:700;color:var(--gold);font-family:monospace;margin-top:2px;}
+
+/* UTIL */
+.flex{display:flex;}.gap8{gap:8px;}.gap12{gap:12px;}.mt8{margin-top:8px;}.mt14{margin-top:14px;}.mt18{margin-top:18px;}
+.mono{font-family:'IBM Plex Mono',monospace;}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+    <div id="logo">
+      <div id="logo-inner">
+        <div id="logo-icon">🚗</div>
+        <div>
+          <div id="logo-name">AutoLoc</div>
+          <div id="logo-sub">PRO · 🇲🇦 المغرب</div>
+        </div>
+      </div>
+    </div>
+    <nav>
+      <div class="nav-label">القائمة</div>
+      <button class="nav-btn nb active" data-page="dashboard">
+        <span class="nav-btn-icon">▦</span>
+        <div><div class="nav-btn-text">Dashboard</div><div class="nav-btn-sub">الرئيسية</div></div>
+        <span class="nav-dot"></span>
+      </button>
+      <button class="nav-btn nb" data-page="fleet">
+        <span class="nav-btn-icon">◈</span>
+        <div><div class="nav-btn-text">Parc Auto</div><div class="nav-btn-sub">الأسطول</div></div>
+        <span class="nav-dot"></span>
+      </button>
+      <button class="nav-btn nb" data-page="reservations">
+        <span class="nav-btn-icon">◷</span>
+        <div><div class="nav-btn-text">Réservations</div><div class="nav-btn-sub">الحجوزات</div></div>
+        <span class="nav-dot"></span>
+      </button>
+      <button class="nav-btn nb" data-page="invoices">
+        <span class="nav-btn-icon">◎</span>
+        <div><div class="nav-btn-text">Facturation</div><div class="nav-btn-sub">الفواتير</div></div>
+        <span class="nav-dot"></span>
+      </button>
+    </nav>
+    <div id="sidebar-footer">
+      <div id="save-badge"><div id="save-dot"></div><span id="save-text">محفوظ</span></div>
+      <div id="user-info">
+        <div id="user-avatar">A</div>
+        <div><div style="font-weight:600;color:var(--wh);font-size:12px;">Admin</div><div style="font-size:10px;color:var(--mt);">Casablanca</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div id="main">
+
+    <!-- DASHBOARD -->
+    <div id="page-dashboard" class="page active">
+      <div class="page-header fu">
+        <div>
+          <div style="font-size:11px;color:var(--mt);text-transform:uppercase;letter-spacing:.06em;font-weight:600;" id="today-date"></div>
+          <h1 class="page-title" style="margin-top:4px;">مرحباً 👋</h1>
+          <div class="page-sub">نظرة عامة على أجنسيك</div>
+        </div>
+        <button class="btn btn-gold" onclick="showPage('reservations');openBookingForm()">+ حجز جديد</button>
+      </div>
+      <div class="stats-grid" id="stats-grid"></div>
+      <div style="display:grid;grid-template-columns:1fr 270px;gap:14px;">
+        <div class="card fu">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <div><div style="font-size:14px;font-weight:700;color:var(--wh);">الإيرادات الشهرية</div><div style="font-size:11px;color:var(--sub);margin-top:2px;">2026</div></div>
+            <div style="background:rgba(212,175,84,.16);border:1px solid rgba(212,175,84,.3);border-radius:7px;padding:3px 10px;font-size:11px;color:var(--gold);font-weight:600;">MAD</div>
+          </div>
+          <div class="bar-chart" id="rev-chart"></div>
+        </div>
+        <div class="card fu">
+          <div style="font-size:14px;font-weight:700;color:var(--wh);margin-bottom:16px;">حالة الأسطول</div>
+          <div id="fleet-status-bars"></div>
+          <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--bd);">
+            <div style="font-size:11px;color:var(--mt);">معدل الاستخدام</div>
+            <div class="mono" style="font-size:22px;font-weight:800;color:var(--gold);margin-top:3px;" id="usage-rate">0%</div>
+          </div>
+        </div>
+      </div>
+      <div class="card fu">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <div style="font-size:14px;font-weight:700;color:var(--wh);">آخر الحجوزات</div>
+          <button class="btn btn-outline" style="font-size:12px;padding:5px 12px;" onclick="showPage('reservations')">عرض الكل ←</button>
+        </div>
+        <div id="recent-bookings"></div>
+      </div>
+    </div>
+
+    <!-- FLEET -->
+    <div id="page-fleet" class="page">
+      <div class="page-header fu">
+        <div>
+          <h1 class="page-title">الأسطول</h1>
+          <div class="page-sub" id="fleet-count"></div>
+        </div>
+        <button class="btn btn-gold" onclick="toggleFleetForm()">+ إضافة سيارة</button>
+      </div>
+      <div class="filter-row">
+        <button class="filter-btn active" data-filter="fleet" data-val="tous" onclick="setFleetFilter(this,'tous')">الكل</button>
+        <button class="filter-btn" data-filter="fleet" data-val="disponible" onclick="setFleetFilter(this,'disponible')">disponible</button>
+        <button class="filter-btn" data-filter="fleet" data-val="loué" onclick="setFleetFilter(this,'loué')">loué</button>
+        <button class="filter-btn" data-filter="fleet" data-val="maintenance" onclick="setFleetFilter(this,'maintenance')">maintenance</button>
+      </div>
+      <div id="fleet-form" style="display:none;">
+        <div class="form-box fu">
+          <div class="form-title">🚗 سيارة جديدة</div>
+          <div class="form-grid">
+            <div class="field"><label>الماركة *</label><select id="f-brand"><option value="">اختر...</option><option>Dacia</option><option>Renault</option><option>Peugeot</option><option>Hyundai</option><option>Volkswagen</option><option>Toyota</option><option>Ford</option><option>Kia</option><option>Fiat</option><option>Citroën</option></select></div>
+            <div class="field"><label>الموديل *</label><input id="f-model" placeholder="Logan"/></div>
+            <div class="field"><label>السنة</label><input id="f-year" type="number" placeholder="2023"/></div>
+            <div class="field"><label>رقم اللوحة *</label><input id="f-plate" placeholder="12345·A·1"/></div>
+            <div class="field"><label>السعر/يوم (MAD) *</label><input id="f-price" type="number" placeholder="280"/></div>
+            <div class="field"><label>الضمان (MAD)</label><input id="f-deposit" type="number" placeholder="2000"/></div>
+            <div class="field"><label>الكيلومتراج</label><input id="f-km" type="number" placeholder="0"/></div>
+            <div class="field"><label>الوقود</label><select id="f-fuel"><option>Essence</option><option>Diesel</option><option>Hybride</option><option>Électrique</option></select></div>
+            <div class="field"><label>المدينة</label><select id="f-city"><option value="">اختر...</option><option>Casablanca</option><option>Rabat</option><option>Marrakech</option><option>Tanger</option><option>Fès</option><option>Agadir</option><option>Meknès</option><option>Oujda</option></select></div>
+            <div class="field"><label>النوع</label><select id="f-type"><option value="sedan">Berline (sedan)</option><option value="suv">SUV</option><option value="hatch">Compacte (hatch)</option></select></div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:center;margin-top:12px;">
+            <label style="font-size:11px;color:var(--sub);font-weight:600;text-transform:uppercase;">اللون</label>
+            <input type="color" id="f-color" value="#c0392b" style="width:34px;height:34px;border:none;background:none;"/>
+            <div id="f-color-preview" style="width:50px;height:30px;border-radius:7px;border:1px solid var(--bd);background:#c0392b;"></div>
+          </div>
+          <div class="mt14 flex gap8">
+            <button class="btn btn-green" onclick="addCar()">حفظ ✓</button>
+            <button class="btn btn-outline" onclick="toggleFleetForm()">إلغاء</button>
+          </div>
+        </div>
+      </div>
+      <div class="cars-grid" id="cars-grid"></div>
+    </div>
+
+    <!-- RESERVATIONS -->
+    <div id="page-reservations" class="page">
+      <div class="page-header fu">
+        <div>
+          <h1 class="page-title">الحجوزات</h1>
+          <div class="page-sub" id="books-count"></div>
+        </div>
+        <button class="btn btn-gold" onclick="toggleBookForm()">+ حجز جديد</button>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input class="search-input" id="book-search" placeholder="بحث بالاسم أو المرجع..." oninput="renderBookings()"/>
+        </div>
+        <div class="filter-row">
+          <button class="filter-btn active" onclick="setBookFilter(this,'tous')">الكل</button>
+          <button class="filter-btn" onclick="setBookFilter(this,'confirmé')">confirmé</button>
+          <button class="filter-btn" onclick="setBookFilter(this,'en cours')">en cours</button>
+          <button class="filter-btn" onclick="setBookFilter(this,'en attente')">en attente</button>
+          <button class="filter-btn" onclick="setBookFilter(this,'terminé')">terminé</button>
+        </div>
+      </div>
+      <div id="book-form" style="display:none;">
+        <div class="form-box fu">
+          <div class="form-title">📅 حجز جديد</div>
+          <div id="no-avail-msg" style="display:none;text-align:center;padding:20px 0;color:var(--mt);">لا توجد سيارات متاحة</div>
+          <div id="book-form-inner">
+            <div class="form-grid">
+              <div class="field"><label>الاسم *</label><input id="b-client" placeholder="Mohammed Alami"/></div>
+              <div class="field"><label>CIN</label><input id="b-cin" placeholder="AB123456"/></div>
+              <div class="field"><label>الهاتف *</label><input id="b-phone" placeholder="0661 23 45 67"/></div>
+              <div class="field"><label>الإيميل</label><input id="b-email" type="email" placeholder="client@mail.com"/></div>
+              <div class="field"><label>السيارة *</label><select id="b-car" onchange="calcTotal()"><option value="">اختر سيارة...</option></select></div>
+              <div></div>
+              <div class="field"><label>تاريخ البداية *</label><input id="b-from" type="date" onchange="calcTotal()"/></div>
+              <div class="field"><label>تاريخ النهاية *</label><input id="b-to" type="date" onchange="calcTotal()"/></div>
+            </div>
+            <div id="book-summary" style="display:none;" class="summary-box"></div>
+            <div class="mt14"><button class="btn btn-green" onclick="addBooking()">إنشاء الحجز ✓</button></div>
+          </div>
+        </div>
+      </div>
+      <div class="booking-list" id="bookings-list"></div>
+    </div>
+
+    <!-- INVOICES -->
+    <div id="page-invoices" class="page">
+      <div class="fu">
+        <h1 class="page-title">الفواتير</h1>
+        <div class="page-sub">الوضع المالي</div>
+      </div>
+      <div class="stats-grid" id="inv-stats"></div>
+      <div class="card fu">
+        <div style="font-size:14px;font-weight:700;color:var(--wh);margin-bottom:16px;">تفصيل الفواتير</div>
+        <div id="inv-table-wrap"></div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- CONTRACT MODAL -->
+<div id="contract-modal" class="modal-overlay" style="display:none;" onclick="closeContract()">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div style="text-align:center;margin-bottom:20px;">
+      <div style="font-size:28px;margin-bottom:6px;">🇲🇦</div>
+      <div class="modal-title">CONTRAT DE LOCATION</div>
+      <div class="modal-sub">عقد كراء سيارة</div>
+      <div id="contract-id-badge" style="display:inline-block;margin-top:8px;background:rgba(212,175,84,.15);border:1px solid rgba(212,175,84,.3);border-radius:7px;padding:2px 12px;font-size:11px;color:var(--gold);font-family:monospace;font-weight:600;"></div>
+    </div>
+    <div id="contract-rows"></div>
+    <div class="modal-clause">يلتزم المستأجر بإرجاع السيارة في حالتها الأصلية، ممتلئة بالوقود، في التاريخ المحدد. أي تأخير أو ضرر سيُحتسب وفق التعرفة المعمول بها.</div>
+    <div class="sig-row">
+      <div class="sig-item"><div class="sig-label">توقيع المستأجر</div><div class="sig-line"></div></div>
+      <div class="sig-item"><div class="sig-label">ختم الوكالة</div><div class="sig-line"></div></div>
+    </div>
+    <button class="btn btn-gold" style="width:100%;" onclick="closeContract()">إغلاق</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" class="toast" style="display:none;"></div>
+
+<script>
+/* ══════════════ DATA ══════════════ */
+const DEFAULT_CARS = [
+  {id:1,brand:"Dacia",model:"Logan",year:2022,plate:"23847·A·1",price:280,deposit:2000,km:38420,fuel:"Essence",status:"disponible",city:"Casablanca",color:"#c0392b",type:"sedan"},
+  {id:2,brand:"Hyundai",model:"Tucson",year:2023,plate:"45612·B·5",price:450,deposit:3500,km:21000,fuel:"Diesel",status:"disponible",city:"Rabat",color:"#2c3e50",type:"suv"},
+  {id:3,brand:"Renault",model:"Clio V",year:2021,plate:"11203·C·3",price:320,deposit:2500,km:52300,fuel:"Essence",status:"disponible",city:"Marrakech",color:"#e67e22",type:"hatch"},
+  {id:4,brand:"Peugeot",model:"3008",year:2023,plate:"78934·D·2",price:520,deposit:4000,km:15800,fuel:"Diesel",status:"maintenance",city:"Tanger",color:"#8e44ad",type:"suv"},
+];
+const DEFAULT_BOOKS = [
+  {id:"RES-001",client:"Youssef Amrani",cin:"BK123456",phone:"0661 23 45 67",email:"",car:"Dacia Logan",carId:1,from:"2026-05-08",to:"2026-05-11",days:3,total:840,deposit:2000,paid:840,status:"en cours",city:"Casablanca"},
+  {id:"RES-002",client:"Sara El Fassi",cin:"BJ789012",phone:"0698 76 54 32",email:"",car:"Renault Clio V",carId:3,from:"2026-05-15",to:"2026-05-17",days:2,total:640,deposit:2500,paid:0,status:"confirmé",city:"Marrakech"},
+];
+const REV_DATA = [{m:"Jan",v:12400},{m:"Fév",v:9800},{m:"Mar",v:15600},{m:"Avr",v:18200},{m:"Mai",v:22400},{m:"Jun",v:0}];
+
+/* ══════════════ STORAGE ══════════════ */
+function load(key, def) { try { const v=localStorage.getItem(key); return v?JSON.parse(v):def; } catch { return def; } }
+function save(key, val) { try { localStorage.setItem(key,JSON.stringify(val)); } catch {} }
+
+let cars  = load("autoloc_cars",  DEFAULT_CARS);
+let books = load("autoloc_books", DEFAULT_BOOKS);
+let fleetFilter = "tous";
+let bookFilter  = "tous";
+let saveTimer;
+
+function persist() {
+  save("autoloc_cars", cars);
+  save("autoloc_books", books);
+  document.getElementById("save-text").textContent = "يحفظ...";
+  document.getElementById("save-dot").style.background = "var(--gold)";
+  document.getElementById("save-dot").style.animation = "spin .8s linear infinite";
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(()=>{
+    document.getElementById("save-text").textContent = "محفوظ";
+    document.getElementById("save-dot").style.background = "var(--green)";
+    document.getElementById("save-dot").style.animation = "";
+  }, 600);
+}
+
+/* ══════════════ STATUS BADGE ══════════════ */
+const ST = {
+  disponible:  {c:"#2ec87a", bg:"rgba(46,200,122,.12)",  bd:"rgba(46,200,122,.25)"},
+  "loué":      {c:"#4d91ff", bg:"rgba(77,145,255,.12)",  bd:"rgba(77,145,255,.25)"},
+  maintenance: {c:"#ff8c42", bg:"rgba(255,140,66,.12)",   bd:"rgba(255,140,66,.25)"},
+  "en cours":  {c:"#4d91ff", bg:"rgba(77,145,255,.12)",  bd:"rgba(77,145,255,.25)"},
+  confirmé:    {c:"#2ec87a", bg:"rgba(46,200,122,.12)",  bd:"rgba(46,200,122,.25)"},
+  terminé:     {c:"#5c5b78", bg:"rgba(92,91,120,.12)",   bd:"rgba(92,91,120,.25)"},
+  "en attente":{c:"#d4af54", bg:"rgba(212,175,84,.12)",  bd:"rgba(212,175,84,.25)"},
+  annulé:      {c:"#f05252", bg:"rgba(240,82,82,.12)",   bd:"rgba(240,82,82,.25)"},
+};
+function badge(s) {
+  const m = ST[s]||{c:"#9896b0",bg:"rgba(255,255,255,.06)",bd:"rgba(255,255,255,.1)"};
+  return `<span class="badge" style="background:${m.bg};color:${m.c};border:1px solid ${m.bd};"><span class="badge-dot" style="background:${m.c};"></span>${s}</span>`;
+}
+
+/* ══════════════ CAR SVG ══════════════ */
+function carSVG(type, color) {
+  const g="rgba(160,220,255,.75)",s="#222",sr="#444",ly="#ffe47a",ry="#ff6b6b";
+  if(type==="suv") return `<svg viewBox="0 0 120 58" width="100%" height="100%"><ellipse cx="60" cy="52" rx="48" ry="4" fill="rgba(0,0,0,.35)"/><rect x="10" y="27" width="100" height="22" rx="6" fill="${color}"/><path d="M17 27 L29 9 L91 9 L105 27Z" fill="${color}" opacity=".92"/><rect x="31" y="12" width="24" height="13" rx="2.5" fill="${g}"/><rect x="65" y="12" width="24" height="13" rx="2.5" fill="${g}"/><circle cx="28" cy="49" r="8.5" fill="${s}" stroke="#444" stroke-width="1.5"/><circle cx="28" cy="49" r="3.5" fill="${sr}"/><circle cx="92" cy="49" r="8.5" fill="${s}" stroke="#444" stroke-width="1.5"/><circle cx="92" cy="49" r="3.5" fill="${sr}"/><rect x="7" y="37" width="7" height="4.5" rx="2" fill="${ly}" opacity=".95"/><rect x="106" y="37" width="7" height="4.5" rx="2" fill="${ry}" opacity=".85"/></svg>`;
+  if(type==="hatch") return `<svg viewBox="0 0 120 58" width="100%" height="100%"><ellipse cx="60" cy="52" rx="48" ry="4" fill="rgba(0,0,0,.35)"/><rect x="8" y="29" width="104" height="20" rx="5" fill="${color}"/><path d="M21 29 L37 11 L83 11 L103 29Z" fill="${color}" opacity=".92"/><rect x="39" y="14" width="21" height="13" rx="2.5" fill="${g}"/><rect x="64" y="14" width="20" height="13" rx="2.5" fill="${g}"/><circle cx="27" cy="49" r="8.5" fill="${s}" stroke="#444" stroke-width="1.5"/><circle cx="27" cy="49" r="3.5" fill="${sr}"/><circle cx="93" cy="49" r="8.5" fill="${s}" stroke="#444" stroke-width="1.5"/><circle cx="93" cy="49" r="3.5" fill="${sr}"/><rect x="6" y="35" width="7" height="4" rx="2" fill="${ly}" opacity=".95"/><rect x="107" y="35" width="7" height="4" rx="2" fill="${ry}" opacity=".85"/></svg>`;
+  return `<svg viewBox="0 0 120 58" width="100%" height="100%"><ellipse cx="60" cy="52" rx="48" ry="4" fill="rgba(0,0,0,.35)"/><rect x="8" y="29" width="104" height="20" rx="5" fill="${color}"/><path d="M17 29 L34 11 L86 11 L107 29Z" fill="${color}" opacity=".92"/><rect x="37" y="14" width="21" height="13" rx="2.5" fill="${g}"/><rect x="62" y="14" width="21" height="13" rx="2.5" fill="${g}"/><circle cx="27" cy="49" r="8.5" fill="${s}" stroke="#444" stroke-width="1.5"/><circle cx="27" cy="49" r="3.5" fill="${sr}"/><circle cx="93" cy="49" r="8.5" fill="${s}" stroke="#444" stroke-width="1.5"/><circle cx="93" cy="49" r="3.5" fill="${sr}"/><rect x="6" y="35" width="7" height="4" rx="2" fill="${ly}" opacity=".95"/><rect x="107" y="35" width="7" height="4" rx="2" fill="${ry}" opacity=".85"/></svg>`;
+}
+
+/* ══════════════ TOAST ══════════════ */
+let toastTimer;
+function toast(msg, type="success") {
+  const el = document.getElementById("toast");
+  el.style.background = type==="error"?"#f05252":type==="warn"?"#ff8c42":"#2ec87a";
+  el.textContent = (type==="error"?"✕ ":type==="warn"?"⚠ ":"✓ ") + msg;
+  el.style.display = "flex";
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>{ el.style.display="none"; }, 3200);
+}
+
+/* ══════════════ NAVIGATION ══════════════ */
+function showPage(id) {
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+  document.querySelectorAll(".nav-btn").forEach(b=>b.classList.remove("active"));
+  document.getElementById("page-"+id).classList.add("active");
+  document.querySelector(`[data-page="${id}"]`)?.classList.add("active");
+  renderPage(id);
+}
+document.querySelectorAll(".nav-btn[data-page]").forEach(btn=>{
+  btn.addEventListener("click",()=>showPage(btn.dataset.page));
+});
+
+/* ══════════════ DASHBOARD ══════════════ */
+function renderDashboard() {
+  // Date
+  document.getElementById("today-date").textContent = new Date().toLocaleDateString("fr-MA",{weekday:"long",year:"numeric",month:"long",day:"numeric"});
+  // Stats
+  const dispo = cars.filter(c=>c.status==="disponible").length;
+  const loue  = cars.filter(c=>c.status==="loué").length;
+  const maint = cars.filter(c=>c.status==="maintenance").length;
+  const totalPaid = books.reduce((s,b)=>s+b.paid,0);
+  const pending = books.filter(b=>["en attente","confirmé"].includes(b.status)).length;
+  document.getElementById("stats-grid").innerHTML = [
+    {icon:"🚗",label:"الأسطول",val:cars.length,sub:"سيارة مسجلة",c:"var(--blue)"},
+    {icon:"✅",label:"متاحة",val:dispo,sub:`${loue} مكراة`,c:"var(--green)"},
+    {icon:"🔧",label:"صيانة",val:maint,sub:"للمراقبة",c:"var(--org)"},
+    {icon:"📋",label:"حجوزات",val:pending,sub:"تنتظر",c:"var(--gold)"},
+    {icon:"💰",label:"المداخيل",val:(totalPaid/1000||0).toFixed(1)+"k",sub:"MAD محصّل",c:"var(--green)"},
+  ].map(({icon,label,val,sub,c},i)=>`
+    <div class="stat-card hvr fu" style="animation-delay:${i*70}ms;">
+      <div style="position:absolute;top:0;right:0;width:70px;height:70px;background:radial-gradient(circle,${c.replace("var(","").replace(")","")=="var(--gold)"?"rgba(212,175,84,.15)":c+"1a"} 0%,transparent 70%);"></div>
+      <div class="stat-icon">${icon}</div>
+      <div class="stat-label">${label}</div>
+      <div class="stat-value">${val}</div>
+      <div class="stat-sub" style="color:${c};">${sub}</div>
+    </div>
+  `).join("");
+  // Revenue chart
+  const max = Math.max(...REV_DATA.map(d=>d.v),1);
+  document.getElementById("rev-chart").innerHTML = REV_DATA.map(d=>`
+    <div class="bar-wrap">
+      <div class="bar-val">${d.v>0?(d.v/1000).toFixed(0)+"k":""}</div>
+      <div class="bar-body" style="height:${Math.round(d.v/max*100)}%;background:rgba(212,175,84,.2);border:1px solid rgba(212,175,84,.4);"></div>
+      <div class="bar-label">${d.m}</div>
+    </div>
+  `).join("");
+  // Fleet bars
+  document.getElementById("fleet-status-bars").innerHTML = [["متاحة",dispo,"var(--green)"],["مكراة",loue,"var(--blue)"],["صيانة",maint,"var(--org)"]].map(([l,n,c])=>`
+    <div style="margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
+        <span style="font-size:12px;color:var(--sub);">${l}</span>
+        <span style="font-size:12px;font-weight:700;color:${c};">${n}</span>
+      </div>
+      <div class="prog-bar-bg"><div class="prog-bar-fill" style="width:${cars.length?Math.round(n/cars.length*100):0}%;background:${c};"></div></div>
+    </div>
+  `).join("");
+  document.getElementById("usage-rate").textContent = cars.length?Math.round(loue/cars.length*100)+"%":"0%";
+  // Recent bookings
+  const rb = document.getElementById("recent-bookings");
+  if(!books.length){ rb.innerHTML='<div class="empty"><div class="empty-icon">📋</div>لا توجد حجوزات</div>'; return; }
+  rb.innerHTML = books.slice(0,4).map(b=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 12px;border-radius:9px;border:1px solid rgba(36,37,56,.4);margin-bottom:8px;flex-wrap:wrap;gap:8px;" class="rh">
+      <div style="display:flex;gap:11px;align-items:center;">
+        <span class="mono" style="font-size:11px;color:var(--gold);font-weight:600;">${b.id}</span>
+        <div>
+          <div style="font-weight:600;color:var(--tx);font-size:13px;">${b.client}</div>
+          <div style="font-size:11px;color:var(--mt);">${b.car} · ${b.from} → ${b.to}</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <span class="mono" style="font-weight:700;color:var(--wh);font-size:13px;">${b.total.toLocaleString()} MAD</span>
+        ${badge(b.status)}
+      </div>
+    </div>
+  `).join("");
+}
+
+/* ══════════════ FLEET ══════════════ */
+function setFleetFilter(el, val) {
+  document.querySelectorAll("[data-filter='fleet']").forEach(b=>b.classList.remove("active"));
+  el.classList.add("active");
+  fleetFilter = val;
+  renderFleet();
+}
+function toggleFleetForm() {
+  const f = document.getElementById("fleet-form");
+  f.style.display = f.style.display==="none"?"block":"none";
+}
+function addCar() {
+  const brand=document.getElementById("f-brand").value;
+  const model=document.getElementById("f-model").value;
+  const plate=document.getElementById("f-plate").value;
+  const price=document.getElementById("f-price").value;
+  if(!brand||!model||!plate||!price){toast("أكمل الحقول الإجبارية","warn");return;}
+  cars.push({
+    id:Date.now(),brand,model,
+    year:+document.getElementById("f-year").value||2024,
+    plate,price:+price,
+    deposit:+document.getElementById("f-deposit").value||2000,
+    km:+document.getElementById("f-km").value||0,
+    fuel:document.getElementById("f-fuel").value,
+    status:"disponible",
+    city:document.getElementById("f-city").value||"Casablanca",
+    color:document.getElementById("f-color").value,
+    type:document.getElementById("f-type").value,
+  });
+  persist();
+  document.getElementById("fleet-form").style.display="none";
+  toast(`${brand} ${model} أضيفت للأسطول ✓`);
+  renderFleet();
+}
+document.getElementById("f-color").addEventListener("input",e=>{
+  document.getElementById("f-color-preview").style.background=e.target.value;
+});
+function toggleCarStatus(id) {
+  const c = cars.find(x=>x.id===id);
+  if(!c)return;
+  c.status = c.status==="maintenance"?"disponible":"maintenance";
+  persist(); renderFleet(); toast(c.status==="disponible"?"السيارة متاحة ✓":"السيارة في الصيانة 🔧");
+}
+function deleteCar(id) {
+  if(!confirm("واش متأكد تحذف هاد السيارة؟"))return;
+  cars = cars.filter(c=>c.id!==id);
+  persist(); renderFleet(); toast("تم الحذف","error");
+}
+function renderFleet() {
+  const list = fleetFilter==="tous"?cars:cars.filter(c=>c.status===fleetFilter);
+  document.getElementById("fleet-count").textContent = `${cars.length} سيارة • ${cars.filter(c=>c.status==="disponible").length} متاحة`;
+  const grid = document.getElementById("cars-grid");
+  if(!list.length){grid.innerHTML=`<div class="empty" style="grid-column:1/-1;"><div class="empty-icon">🚗</div>لا توجد سيارات في هذه الفئة</div>`;return;}
+  grid.innerHTML = list.map((car,i)=>{
+    const m = ST[car.status]||{c:"#9896b0",bg:"rgba(255,255,255,.06)",bd:"rgba(255,255,255,.1)"};
+    return `
+    <div class="car-card hvr fu" style="animation-delay:${i*55}ms;">
+      <div class="car-visual" style="background:linear-gradient(135deg,#0b0c14,${car.color}28);">
+        <div style="position:absolute;top:8px;left:10px;">${badge(car.status)}</div>
+        <div style="width:88%;height:82px;">${carSVG(car.type,car.color)}</div>
+      </div>
+      <div class="car-info">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div>
+            <div class="car-name">${car.brand} ${car.model}</div>
+            <div class="car-plate">${car.plate}</div>
+          </div>
+          <div style="text-align:right;">
+            <div class="car-price">${car.price}</div>
+            <div style="font-size:10px;color:var(--mt);">MAD/يوم</div>
+          </div>
+        </div>
+        <div class="car-tags">
+          <span class="car-tag">📅 ${car.year}</span>
+          <span class="car-tag">⛽ ${car.fuel}</span>
+          <span class="car-tag">🛣️ ${Math.round(car.km/1000)}k</span>
+          <span class="car-tag">📍 ${car.city}</span>
+        </div>
+        <div class="car-actions">
+          <span style="font-size:11px;color:var(--mt);flex:1;">ضمان: <b style="color:var(--sub);">${car.deposit.toLocaleString()} MAD</b></span>
+          ${car.status!=="loué"?`<button class="btn btn-outline btn-sm" onclick="toggleCarStatus(${car.id})">${car.status==="maintenance"?"✅":"🔧"}</button>`:""}
+          <button class="btn btn-danger btn-sm" onclick="deleteCar(${car.id})">🗑</button>
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+/* ══════════════ BOOKINGS ══════════════ */
+function setBookFilter(el, val) {
+  document.querySelectorAll("#page-reservations .filter-btn").forEach(b=>b.classList.remove("active"));
+  el.classList.add("active");
+  bookFilter = val;
+  renderBookings();
+}
+function openBookingForm(){ document.getElementById("book-form").style.display="block"; fillCarSelect(); }
+function toggleBookForm() {
+  const f = document.getElementById("book-form");
+  const open = f.style.display==="none"||!f.style.display;
+  f.style.display = open?"block":"none";
+  if(open) fillCarSelect();
+}
+function fillCarSelect() {
+  const avail = cars.filter(c=>c.status==="disponible");
+  const sel = document.getElementById("b-car");
+  if(!avail.length){ document.getElementById("no-avail-msg").style.display="block"; document.getElementById("book-form-inner").style.display="none"; return; }
+  document.getElementById("no-avail-msg").style.display="none";
+  document.getElementById("book-form-inner").style.display="block";
+  sel.innerHTML = `<option value="">اختر سيارة...</option>` + avail.map(c=>`<option value="${c.id}">${c.brand} ${c.model} — ${c.price} MAD/يوم (${c.city})</option>`).join("");
+}
+function calcTotal() {
+  const carId = +document.getElementById("b-car").value;
+  const from  = document.getElementById("b-from").value;
+  const to    = document.getElementById("b-to").value;
+  const sum   = document.getElementById("book-summary");
+  if(!carId||!from||!to){sum.style.display="none";return;}
+  const car = cars.find(c=>c.id===carId);
+  const days = Math.max(1,Math.ceil((new Date(to)-new Date(from))/86400000));
+  const total = car.price*days;
+  sum.style.display = "flex";
+  sum.innerHTML = [["المدة",`${days} يوم`],["السعر/يوم",`${car.price} MAD`],["المجموع",`${total.toLocaleString()} MAD`],["الضمان",`${car.deposit.toLocaleString()} MAD`]]
+    .map(([k,v])=>`<div class="summary-item"><div class="summary-key">${k}</div><div class="summary-val">${v}</div></div>`).join("");
+}
+function genBookId() {
+  const nums = books.map(b=>parseInt(b.id.replace("RES-",""))||0);
+  return `RES-${String((nums.length?Math.max(...nums):0)+1).padStart(3,"0")}`;
+}
+function addBooking() {
+  const client=document.getElementById("b-client").value.trim();
+  const phone=document.getElementById("b-phone").value.trim();
+  const carId=+document.getElementById("b-car").value;
+  const from=document.getElementById("b-from").value;
+  const to=document.getElementById("b-to").value;
+  if(!client||!phone||!carId||!from||!to){toast("أكمل الحقول الإجبارية","warn");return;}
+  const car = cars.find(c=>c.id===carId);
+  const days = Math.max(1,Math.ceil((new Date(to)-new Date(from))/86400000));
+  books.unshift({
+    id:genBookId(),client,cin:document.getElementById("b-cin").value,
+    phone,email:document.getElementById("b-email").value,
+    car:`${car.brand} ${car.model}`,carId,from,to,days,
+    total:car.price*days,deposit:car.deposit,paid:0,status:"confirmé",city:car.city
+  });
+  car.status="loué";
+  persist();
+  document.getElementById("book-form").style.display="none";
+  ["b-client","b-cin","b-phone","b-email","b-from","b-to"].forEach(id=>document.getElementById(id).value="");
+  document.getElementById("b-car").value="";
+  document.getElementById("book-summary").style.display="none";
+  toast(`${books[0].id} — الحجز أضيف ✓`);
+  renderBookings();
+}
+function updateBookStatus(id,status) {
+  const b = books.find(x=>x.id===id);
+  if(!b)return;
+  b.status = status;
+  if(["terminé","annulé"].includes(status)){
+    const car = cars.find(c=>c.id===b.carId);
+    if(car) car.status="disponible";
+  }
+  persist();
+  toast(status==="terminé"?"السيارة أُرجعت ✓":status==="annulé"?"تم الإلغاء":"تم التحديث ✓", status==="annulé"?"error":"success");
+  renderBookings();
+}
+function markPaid(id) {
+  const b = books.find(x=>x.id===id);
+  if(b){ b.paid=b.total; persist(); renderBookings(); toast("الدفع مسجّل 💰"); }
+}
+function openContract(id) {
+  const b = books.find(x=>x.id===id);
+  if(!b)return;
+  document.getElementById("contract-id-badge").textContent = b.id;
+  document.getElementById("contract-rows").innerHTML = [
+    ["المستأجر",b.client],["CIN",b.cin||"—"],["الهاتف",b.phone],
+    ["السيارة",b.car],["من",b.from],["إلى",b.to],
+    ["المدة",`${b.days} يوم`],["المبلغ",`${b.total.toLocaleString()} MAD`],
+    ["الضمان",`${b.deposit.toLocaleString()} MAD`]
+  ].map(([k,v])=>`<div class="modal-row"><span class="modal-key">${k}</span><span class="modal-val">${v}</span></div>`).join("");
+  document.getElementById("contract-modal").style.display="flex";
+}
+function closeContract() { document.getElementById("contract-modal").style.display="none"; }
+function renderBookings() {
+  document.getElementById("books-count").textContent = `${books.length} حجز`;
+  const q = document.getElementById("book-search").value.toLowerCase();
+  const list = books.filter(b=>{
+    const ms = b.client.toLowerCase().includes(q)||b.id.toLowerCase().includes(q)||b.car.toLowerCase().includes(q);
+    const mf = bookFilter==="tous"||b.status===bookFilter;
+    return ms&&mf;
+  });
+  const el = document.getElementById("bookings-list");
+  if(!list.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📋</div>لا توجد نتائج</div>`;return;}
+  el.innerHTML = list.map((b,i)=>{
+    const pct = b.total?Math.round(b.paid/b.total*100):0;
+    const paidColor = b.paid>=b.total?"var(--green)":"var(--org)";
+    return `
+    <div class="booking-card hvr fu" style="animation-delay:${i*35}ms;">
+      <div class="booking-main">
+        <div style="display:flex;gap:11px;align-items:flex-start;">
+          <div class="booking-ref">${b.id}</div>
+          <div>
+            <div class="booking-client">${b.client}</div>
+            <div class="booking-meta">
+              <span>📞 ${b.phone}</span>
+              ${b.cin?`<span>🪪 ${b.cin}</span>`:""}
+              <span>🚗 ${b.car}</span>
+              <span>📍 ${b.city}</span>
+            </div>
+            <div class="booking-dates">📅 ${b.from} → ${b.to} (${b.days} يوم)</div>
+            <div class="pay-bar-wrap">
+              <div class="pay-bar-bg"><div class="pay-bar-fill" style="width:${pct}%;background:${paidColor};"></div></div>
+              <span style="font-size:10px;color:${paidColor};">${b.paid.toLocaleString()}/${b.total.toLocaleString()} MAD</span>
+            </div>
+          </div>
+        </div>
+        <div class="booking-actions">
+          ${badge(b.status)}
+          <button class="btn btn-outline btn-sm" onclick="openContract('${b.id}')">📄</button>
+          ${b.paid<b.total&&!["annulé","terminé"].includes(b.status)?`<button class="btn btn-sm" style="background:rgba(46,200,122,.14);border:1px solid rgba(46,200,122,.3);color:var(--green);" onclick="markPaid('${b.id}')">💰 دُفع</button>`:""}
+          ${b.status==="confirmé"?`<button class="btn btn-blue btn-sm" onclick="updateBookStatus('${b.id}','en cours')">▶ انطلق</button>`:""}
+          ${b.status==="en cours"?`<button class="btn btn-sm" style="background:rgba(46,200,122,.14);border:1px solid rgba(46,200,122,.3);color:var(--green);" onclick="updateBookStatus('${b.id}','terminé')">✓ رجع</button>`:""}
+          ${!["terminé","annulé"].includes(b.status)?`<button class="btn btn-danger btn-sm" onclick="updateBookStatus('${b.id}','annulé')">✕</button>`:""}
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+/* ══════════════ INVOICES ══════════════ */
+function renderInvoices() {
+  const total = books.reduce((s,b)=>s+b.total,0);
+  const paid  = books.reduce((s,b)=>s+b.paid,0);
+  const due   = total-paid;
+  document.getElementById("inv-stats").innerHTML = [
+    {icon:"💰",label:"إجمالي الفواتير",val:(total/1000).toFixed(1)+"k",sub:"MAD",c:"var(--gold)"},
+    {icon:"✅",label:"المحصّل",val:(paid/1000).toFixed(1)+"k",sub:`${total?Math.round(paid/total*100):0}%`,c:"var(--green)"},
+    {icon:"⏳",label:"المتبقي",val:(due/1000).toFixed(1)+"k",sub:"MAD",c:"var(--org)"},
+  ].map(({icon,label,val,sub,c})=>`
+    <div class="stat-card hvr fu">
+      <div class="stat-icon">${icon}</div>
+      <div class="stat-label">${label}</div>
+      <div class="stat-value" style="color:${c};">${val}</div>
+      <div class="stat-sub" style="color:${c};">${sub}</div>
+    </div>
+  `).join("");
+  const tw = document.getElementById("inv-table-wrap");
+  if(!books.length){tw.innerHTML=`<div class="empty"><div class="empty-icon">🧾</div>لا توجد فواتير</div>`;return;}
+  tw.innerHTML = `<table>
+    <thead><tr>
+      <th>المرجع</th><th>الزبون</th><th>السيارة</th><th>الأيام</th>
+      <th>المبلغ</th><th>المدفوع</th><th>المتبقي</th><th>الحالة</th>
+    </tr></thead>
+    <tbody>
+    ${books.map(b=>`<tr class="rh">
+      <td class="mono" style="font-size:11px;color:var(--gold);font-weight:600;">${b.id}</td>
+      <td style="font-weight:600;color:var(--tx);font-size:13px;">${b.client}</td>
+      <td style="color:var(--sub);font-size:12px;">${b.car}</td>
+      <td style="color:var(--sub);font-size:12px;text-align:center;">${b.days}</td>
+      <td class="mono" style="font-weight:700;color:var(--wh);font-size:12px;">${b.total.toLocaleString()}</td>
+      <td class="mono" style="font-weight:600;color:var(--green);font-size:12px;">${b.paid.toLocaleString()}</td>
+      <td class="mono" style="font-weight:600;color:${b.total-b.paid>0?"var(--org)":"var(--green)"};font-size:12px;">${(b.total-b.paid).toLocaleString()}</td>
+      <td>${badge(b.status)}</td>
+    </tr>`).join("")}
+    </tbody>
+    <tfoot><tr style="border-top:2px solid var(--bd);">
+      <td colspan="4" style="padding:12px 10px;color:var(--sub);font-size:12px;font-weight:700;">TOTAL</td>
+      <td class="mono" style="padding:12px 10px;font-weight:800;color:var(--gold);font-size:14px;">${total.toLocaleString()}</td>
+      <td class="mono" style="padding:12px 10px;font-weight:800;color:var(--green);font-size:14px;">${paid.toLocaleString()}</td>
+      <td class="mono" style="padding:12px 10px;font-weight:800;color:var(--org);font-size:14px;">${due.toLocaleString()}</td>
+      <td></td>
+    </tr></tfoot>
+  </table>`;
+}
+
+/* ══════════════ RENDER DISPATCHER ══════════════ */
+function renderPage(id) {
+  if(id==="dashboard")    renderDashboard();
+  if(id==="fleet")        renderFleet();
+  if(id==="reservations") renderBookings();
+  if(id==="invoices")     renderInvoices();
+}
+
+/* ══════════════ INIT ══════════════ */
+renderDashboard();
+</script>
+</body>
+</html>
